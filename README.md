@@ -189,7 +189,7 @@ The compressed MEMORY.md index has poor vectors, but it's not the search target 
 
 ## Author
 
-Created by Gregor Amon
+Created by Gregor Amon ([@ai_with_gregor](https://x.com/ai_with_gregor))
 
 ## License
 
