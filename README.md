@@ -110,10 +110,10 @@ The skill offers to set up twice-daily compression at 06:00 and 18:00 local time
 
 ### Savings Report
 
-After every run, the skill displays a token savings report:
+**First run** shows a full before/after breakdown — this is where the big savings happen:
 
-```
-Context Compression Complete
+```text
+Context Compression — First Run
 ------------------------------------------------------------
 File                  Before (tokens)  After (tokens)  Saved
 ------------------------------------------------------------
@@ -127,10 +127,20 @@ TOOLS.md (skill index)          1,150             290   75%
 ------------------------------------------------------------
 TOTAL                           5,920           1,430   76%
 ------------------------------------------------------------
-Estimated tokens saved per turn: ~4,490
+Tokens saved per turn: ~4,490
 ```
 
-Token estimates use the standard ~4 chars/token heuristic. Only context-injected content counts — detail files on disk (read on demand) are excluded from the "after" total.
+**Subsequent runs** show an incremental summary — you're merging new daily files into already-compressed content, so the delta is small:
+
+```text
+Context Compression — Incremental Update
+------------------------------------------
+New daily files consolidated:  3
+Entries added:                 7
+Entries updated:               2
+Current context size:    1,430 tokens
+Delta:                     +50 tokens
+```
 
 ## Size Targets
 
@@ -152,9 +162,34 @@ Token estimates use the standard ~4 chars/token heuristic. Only context-injected
 - Size and semantic validation on every compression
 - Emergency recovery from backups if compression fails
 
-## QMD Compatibility
+## QMD Vector Compatibility
 
-Archived files and detail files in `memory/compressed/` remain on disk and are indexed by QMD vector search. The agent gets the best of both worlds: compressed index in context for fast lookup, full content available on demand for deep reads.
+Compressing file content changes its vector embeddings, which could break semantic search. Here's how this skill handles it.
+
+**The problem**: Pipe-delimited compressed text like `|PREF|pkg:Bun-over-pnpm(faster)|` produces much worse vector embeddings than the original prose "User prefers Bun over pnpm because it's faster." When QMD re-indexes on its 5-minute cycle, the old good vectors get replaced with poor ones.
+
+**The solution**: Detail files. The full uncompressed content lives in `memory/compressed/*.md` (preferences.md, decisions.md, lessons.md, etc.). These files:
+
+1. Live under `memory/` so QMD indexes them automatically via its `**/*.md` glob
+2. Contain natural prose, producing quality vector embeddings
+3. Serve as on-demand read targets for the agent (the Vercel pattern)
+
+The compressed MEMORY.md index has poor vectors, but it's not the search target — the detail files are.
+
+**Bootstrap files** (SOUL.md, IDENTITY.md, USER.md, etc.) are not indexed by QMD at all — they're loaded directly by the bootstrap system. Compressing them has zero impact on vector search.
+
+**Archive files** in `memory/archive/` are also indexed by QMD's recursive glob. This provides redundant vector coverage. If archive noise becomes a problem, move archives outside the QMD-indexed path.
+
+| Content | Vector Quality | Search Role |
+|---|---|---|
+| Compressed MEMORY.md | Poor | Not the search target |
+| Detail files (`memory/compressed/`) | Good | Primary search targets |
+| Archive files (`memory/archive/`) | Good | Redundant fallback |
+| Bootstrap files (SOUL, IDENTITY, etc.) | Not indexed by QMD | N/A |
+
+## Author
+
+Created by Gregor Amon ([@ai_with_gregor](https://x.com/ai_with_gregor))
 
 ## License
 

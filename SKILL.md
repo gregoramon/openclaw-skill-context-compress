@@ -124,7 +124,7 @@ Bootstrap files are small enough to compress inline (no separate detail files ne
 ```
 
 ```
-<!-- USER-START -->[User]|name:Gregor|lang:English|stack:Next.js,Supabase,Expo,Tailwind|pkg:Bun|deploy:Vercel|vcs:GitHub|style:practical,no-overengineering<!-- USER-END -->
+<!-- USER-START -->[User]|name:Gregor-Amon|lang:English|stack:Next.js,Supabase,Expo,Tailwind|pkg:Bun|deploy:Vercel|vcs:GitHub|style:practical,no-overengineering<!-- USER-END -->
 ```
 
 ```
@@ -175,21 +175,21 @@ Prompt the user:
 
 ## Savings Report
 
-After compression completes, display a token savings report to the user. This makes the value of compression tangible.
+After compression completes, display a token savings report. Token estimates use the ~4 chars/token heuristic.
 
 ### How to Calculate
 
-1. **Before**: Sum the byte size of all original files that were compressed (read sizes before overwriting)
-2. **After**: Sum the byte size of all compressed output files (the indexes and inline-compressed bootstrap files — only what gets injected into context, not the detail files on disk)
-3. **Token estimate**: Divide byte count by 4 (standard heuristic: ~4 characters per token for English text)
-4. **Savings**: Calculate the difference and percentage
+1. **Before**: Sum the byte size of all original files before compression (read sizes before overwriting)
+2. **After**: Sum the byte size of all compressed output (indexes + inline bootstrap files — only what gets injected into context, not detail files on disk)
+3. **Token estimate**: Divide byte count by 4
+4. **Savings**: Difference and percentage
 
-### Output Format
+### First Run — Full Report
 
-Display a table after each run:
+On first run (no existing `<!-- *-START -->` markers found in any target file), show the full before/after table:
 
-```
-Context Compression Complete
+```text
+Context Compression — First Run
 ------------------------------------------------------------
 File                  Before (tokens)  After (tokens)  Saved
 ------------------------------------------------------------
@@ -203,15 +203,34 @@ TOOLS.md (skill index)          1,150             290   75%
 ------------------------------------------------------------
 TOTAL                           5,920           1,430   76%
 ------------------------------------------------------------
-Estimated tokens saved per turn: ~4,490
+Tokens saved per turn: ~4,490
 ```
+
+### Subsequent Runs — Incremental Summary
+
+On subsequent runs (compressed markers already exist), only show what changed:
+
+```text
+Context Compression — Incremental Update
+------------------------------------------
+New daily files consolidated:  3
+Entries added:                 7
+Entries updated:               2
+Entries removed:               0
+------------------------------------------
+Current context size:    1,430 tokens
+Previous context size:   1,380 tokens
+Delta:                     +50 tokens
+------------------------------------------
+```
+
+The big savings happen on the first compression. After that, runs are incremental — merging new daily files into the existing compressed index and detail files. The ratio won't be dramatic because you're compressing already-compressed content plus small daily additions.
 
 ### Notes
 
 - Only count what gets injected into context (compressed indexes + inline bootstrap files)
-- Detail files in `memory/compressed/` do NOT count toward "after" — they live on disk and are read on demand
-- The "per turn" number is the key metric — this is what the user saves on every single API call
-- If running via cron (`--auto`), append the savings summary to `memory/archive/compression-log.md` instead of displaying it
+- Detail files in `memory/compressed/` do NOT count toward "after" — they're on disk for on-demand reads
+- If running via cron (`--auto`), append the summary to `memory/archive/compression-log.md`
 
 ## Safety Guarantees
 
@@ -223,13 +242,61 @@ Estimated tokens saved per turn: ~4,490
 6. **Emergency recovery**: If compression produces invalid output, restore from `memory/archive/` backup
 7. **Dry run mode**: Support `--dry-run` flag to preview compression without writing
 
-## QMD Compatibility
+## QMD Vector Compatibility
 
-- Archived files remain on disk and are still indexed by QMD vector search
-- Detail files in `memory/compressed/` are indexed alongside the compressed MEMORY.md
-- Compressed content in bootstrap files is re-embedded on next QMD sync cycle
-- Pipe-delimited format is parseable by both LLMs and simple text search
-- HTML comment markers are invisible in rendered markdown but machine-readable
+Compression changes file content, which changes vector embeddings. This section explains how the skill avoids breaking QMD semantic search.
+
+### How QMD Indexes Memory
+
+QMD creates three default collections:
+
+| Collection | Path | Glob |
+|---|---|---|
+| `memory-root` | `<workspace>/` | `MEMORY.md` |
+| `memory-alt` | `<workspace>/` | `memory.md` |
+| `memory-dir` | `<workspace>/memory/` | `**/*.md` |
+
+QMD re-indexes on boot and every 5 minutes (`qmd update` + `qmd embed`). When a file changes, old vectors are marked inactive and replaced with new ones on the next embed cycle. There is no file watcher — purely schedule-based.
+
+### The Vector Problem
+
+Compressed pipe-delimited content produces **worse vector embeddings** than natural prose. If MEMORY.md goes from "User prefers Bun over pnpm because it's faster" to `|PREF|pkg:Bun-over-pnpm(faster)|`, a semantic search for "what package manager" will match poorly. The previous good vectors are replaced by bad ones on the next 5-minute cycle.
+
+### How Detail Files Solve This
+
+The detail files in `memory/compressed/` are the key. They contain **full uncompressed prose** organized by category, and they live under `memory/` so QMD indexes them automatically via the `**/*.md` glob:
+
+- `memory/compressed/preferences.md` — good vectors for preference searches
+- `memory/compressed/decisions.md` — good vectors for decision searches
+- `memory/compressed/lessons.md` — good vectors for "what went wrong" searches
+- etc.
+
+These files serve double duty:
+1. **On-demand reads** — the agent reads them when the compressed index tells it to (the Vercel pattern)
+2. **Vector targets** — QMD produces quality embeddings from their natural prose, so semantic search works
+
+The compressed MEMORY.md index will have poor vectors, but that's fine — it's not the search target. The detail files are.
+
+### Archive Directory Consideration
+
+QMD's `**/*.md` glob also indexes `memory/archive/`. This means old uncompressed daily files remain searchable, which provides redundant vector coverage but can introduce noise over time. Two approaches:
+
+1. **Accept it** (default) — archive vectors provide fallback coverage. QMD's scoring will rank current detail files higher than stale archive entries.
+2. **Move archives outside** — if noise becomes a problem, move `memory/archive/` to a path outside the QMD-indexed directory (e.g., `~/.openclaw/archive/`). This keeps archives on disk for recovery but removes them from vector search.
+
+### Bootstrap Files Are Not Affected
+
+SOUL.md, IDENTITY.md, USER.md, AGENTS.md, and HEARTBEAT.md are **not indexed by QMD**. They are loaded by the bootstrap system directly into context. Compressing them inline has zero impact on vector search.
+
+### Summary
+
+| Content | Vectors | Search Quality |
+|---|---|---|
+| Compressed MEMORY.md index | Poor (pipe-delimited) | Not the search target |
+| Detail files in `memory/compressed/` | Good (natural prose) | Primary search targets |
+| Archive files in `memory/archive/` | Good (original content) | Redundant fallback |
+| Bootstrap files (SOUL, IDENTITY, etc.) | Not indexed by QMD | N/A |
+| Skill SKILL.md files | Not indexed by QMD | N/A |
 
 ## Output Format Reference
 
