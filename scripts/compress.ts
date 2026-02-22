@@ -436,11 +436,10 @@ function runBootstrapCompression() {
       console.warn(`  Warning: ${filename} compressed marker is ${compressed.length} bytes (>2KB limit)`);
     }
 
-    // Append marker to file
+    // Append marker to file (prose preserved above, only marker burns tokens)
     const newContent = clean + "\n\n" + compressed + "\n";
-    const prevSize = content.length;
     writeFile(filePath, newContent);
-    trackSavings(filename, prevSize, newContent.length);
+    trackSavings(filename, content.length, compressed.length);
 
     if (flags.verbose) {
       console.log(`  ${filename}: ${sections.length} sections -> ${compressed.length} bytes marker`);
