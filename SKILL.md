@@ -40,6 +40,22 @@ Files: SOUL.md, IDENTITY.md, USER.md, AGENTS.md, HEARTBEAT.md
 2. Write/replace in TOOLS.md:
 `<!-- SKILLS-INDEX-START -->[Skills]|root:~/.openclaw/skills|Read SKILL.md before invoking.|name:{SKILL.md},env:KEY,cmd:/cmd<!-- SKILLS-INDEX-END -->`
 
+## Run
+
+```bash
+bun {baseDir}/scripts/compress.ts [workspace-dir]
+```
+
+Or with Node:
+
+```bash
+npx tsx {baseDir}/scripts/compress.ts [workspace-dir]
+```
+
+Flags: `--dry-run`, `--verbose`, `--skip-memory`, `--skip-bootstrap`, `--skip-skills`
+
+If `[workspace-dir]` is omitted, uses current working directory.
+
 ## Cron
 
 Offer 2x daily (06:00+18:00). Log → `memory/archive/compression-log.md`.
