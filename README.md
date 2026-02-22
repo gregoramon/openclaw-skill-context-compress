@@ -187,6 +187,30 @@ The compressed MEMORY.md index has poor vectors, but it's not the search target 
 | Archive files (`memory/archive/`) | Good | Redundant fallback |
 | Bootstrap files (SOUL, IDENTITY, etc.) | Not indexed by QMD | N/A |
 
+## A/B Testing
+
+The `test/` directory contains a script that sends identical messages to two OpenClaw instances via UniPile (Telegram) to measure real token savings.
+
+**Setup:**
+
+1. Deploy two instances from the [Railway template](https://railway.com/deploy/clawdbot-railway-template)
+2. Create two Telegram bots (BotFather), connect one to each instance
+3. Install the context-compress skill on Instance A, leave Instance B as-is
+4. Run `/memory-consolidate` on Instance A
+5. Copy `test/.env.example` to `test/.env` and fill in your UniPile + chat IDs
+
+**Run:**
+
+```bash
+# First, find your Telegram chat IDs
+bun run test/ab-test.ts --list-chats
+
+# Then run the test (sends 10 messages to both bots with 20s delay)
+bun run test/ab-test.ts
+```
+
+**Compare results:** Open each instance's Usage dashboard — `input_tokens` (prompt tokens) is where compression savings appear. OpenClaw logs token counts per request in session JSONL transcripts automatically.
+
 ## Author
 
 Created by Gregor Amon ([@ai_with_gregor](https://x.com/ai_with_gregor))
