@@ -112,7 +112,7 @@ The skill offers to set up twice-daily compression at 06:00 and 18:00 local time
 
 **First run** shows a full before/after breakdown — this is where the big savings happen:
 
-```
+```text
 Context Compression — First Run
 ------------------------------------------------------------
 File                  Before (tokens)  After (tokens)  Saved
@@ -132,7 +132,7 @@ Tokens saved per turn: ~4,490
 
 **Subsequent runs** show an incremental summary — you're merging new daily files into already-compressed content, so the delta is small:
 
-```
+```text
 Context Compression — Incremental Update
 ------------------------------------------
 New daily files consolidated:  3

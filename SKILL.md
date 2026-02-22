@@ -188,7 +188,7 @@ After compression completes, display a token savings report. Token estimates use
 
 On first run (no existing `<!-- *-START -->` markers found in any target file), show the full before/after table:
 
-```
+```text
 Context Compression — First Run
 ------------------------------------------------------------
 File                  Before (tokens)  After (tokens)  Saved
@@ -210,7 +210,7 @@ Tokens saved per turn: ~4,490
 
 On subsequent runs (compressed markers already exist), only show what changed:
 
-```
+```text
 Context Compression — Incremental Update
 ------------------------------------------
 New daily files consolidated:  3
@@ -260,7 +260,7 @@ QMD re-indexes on boot and every 5 minutes (`qmd update` + `qmd embed`). When a 
 
 ### The Vector Problem
 
-Compressed pipe-delimited content produces **worse vector embeddings** than natural prose. If MEMORY.md goes from "User prefers Bun over pnpm because it's faster" to `|PREF|pkg:Bun-over-pnpm(faster)|`, a semantic search for "what package manager" will match poorly. The old good vectors are replaced by bad ones on the next 5-minute cycle.
+Compressed pipe-delimited content produces **worse vector embeddings** than natural prose. If MEMORY.md goes from "User prefers Bun over pnpm because it's faster" to `|PREF|pkg:Bun-over-pnpm(faster)|`, a semantic search for "what package manager" will match poorly. The previous good vectors are replaced by bad ones on the next 5-minute cycle.
 
 ### How Detail Files Solve This
 
