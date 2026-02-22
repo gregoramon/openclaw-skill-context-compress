@@ -187,6 +187,10 @@ The compressed MEMORY.md index has poor vectors, but it's not the search target 
 | Archive files (`memory/archive/`) | Good | Redundant fallback |
 | Bootstrap files (SOUL, IDENTITY, etc.) | Not indexed by QMD | N/A |
 
+## Author
+
+Created by Gregor Amon
+
 ## License
 
 MIT

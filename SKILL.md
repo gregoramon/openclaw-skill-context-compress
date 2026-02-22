@@ -124,7 +124,7 @@ Bootstrap files are small enough to compress inline (no separate detail files ne
 ```
 
 ```
-<!-- USER-START -->[User]|name:Gregor|lang:English|stack:Next.js,Supabase,Expo,Tailwind|pkg:Bun|deploy:Vercel|vcs:GitHub|style:practical,no-overengineering<!-- USER-END -->
+<!-- USER-START -->[User]|name:Gregor-Amon|lang:English|stack:Next.js,Supabase,Expo,Tailwind|pkg:Bun|deploy:Vercel|vcs:GitHub|style:practical,no-overengineering<!-- USER-END -->
 ```
 
 ```
