@@ -108,6 +108,30 @@ cp SKILL.md ~/.openclaw/skills/context-compress/
 
 The skill offers to set up twice-daily compression at 06:00 and 18:00 local time on first run.
 
+### Savings Report
+
+After every run, the skill displays a token savings report:
+
+```
+Context Compression Complete
+------------------------------------------------------------
+File                  Before (tokens)  After (tokens)  Saved
+------------------------------------------------------------
+MEMORY.md                       2,840             680   76%
+SOUL.md                           520             110   79%
+IDENTITY.md                       380              95   75%
+USER.md                           440             105   76%
+AGENTS.md                         310              80   74%
+HEARTBEAT.md                      280              70   75%
+TOOLS.md (skill index)          1,150             290   75%
+------------------------------------------------------------
+TOTAL                           5,920           1,430   76%
+------------------------------------------------------------
+Estimated tokens saved per turn: ~4,490
+```
+
+Token estimates use the standard ~4 chars/token heuristic. Only context-injected content counts — detail files on disk (read on demand) are excluded from the "after" total.
+
 ## Size Targets
 
 | File | Max Compressed Size | Type |

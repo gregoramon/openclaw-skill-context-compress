@@ -173,6 +173,46 @@ Prompt the user:
 
 > Would you like to set up automatic memory compression? This runs at 06:00 and 18:00 daily, backing up and compressing workspace files to reduce token usage. (y/n)
 
+## Savings Report
+
+After compression completes, display a token savings report to the user. This makes the value of compression tangible.
+
+### How to Calculate
+
+1. **Before**: Sum the byte size of all original files that were compressed (read sizes before overwriting)
+2. **After**: Sum the byte size of all compressed output files (the indexes and inline-compressed bootstrap files — only what gets injected into context, not the detail files on disk)
+3. **Token estimate**: Divide byte count by 4 (standard heuristic: ~4 characters per token for English text)
+4. **Savings**: Calculate the difference and percentage
+
+### Output Format
+
+Display a table after each run:
+
+```
+Context Compression Complete
+------------------------------------------------------------
+File                  Before (tokens)  After (tokens)  Saved
+------------------------------------------------------------
+MEMORY.md                       2,840             680   76%
+SOUL.md                           520             110   79%
+IDENTITY.md                       380              95   75%
+USER.md                           440             105   76%
+AGENTS.md                         310              80   74%
+HEARTBEAT.md                      280              70   75%
+TOOLS.md (skill index)          1,150             290   75%
+------------------------------------------------------------
+TOTAL                           5,920           1,430   76%
+------------------------------------------------------------
+Estimated tokens saved per turn: ~4,490
+```
+
+### Notes
+
+- Only count what gets injected into context (compressed indexes + inline bootstrap files)
+- Detail files in `memory/compressed/` do NOT count toward "after" — they live on disk and are read on demand
+- The "per turn" number is the key metric — this is what the user saves on every single API call
+- If running via cron (`--auto`), append the savings summary to `memory/archive/compression-log.md` instead of displaying it
+
 ## Safety Guarantees
 
 1. **Always backup first**: Every file gets archived before modification
